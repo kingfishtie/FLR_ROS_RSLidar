@@ -1,6 +1,17 @@
 #include "preprocess.h"
 
 #include <pcl/common/common.h>
+#include <string>
+
+static bool has_field(const sensor_msgs::msg::PointCloud2 &msg, const std::string &name)
+{
+  for (const auto &f : msg.fields)
+  {
+    if (f.name == name)
+      return true;
+  }
+  return false;
+}
 
 #define RETURN0 0x00
 #define RETURN0AND1 0x10
@@ -46,12 +57,20 @@ void Preprocess::set(bool feat_en, int lid_type, double bld, int pfilt_num)
 
 void Preprocess::process(const livox_ros_driver2::msg::CustomMsg::UniquePtr &msg, PointCloudXYZI::Ptr& pcl_out)
 {
+  if (msg->header.stamp.sec < 0) {
+    RCLCPP_WARN(rclcpp::get_logger("preprocess"), "收到非法时间戳，忽略此帧点云");
+    return;
+  }
   avia_handler(msg);
   *pcl_out = pl_surf;
 }
 
 void Preprocess::process(const sensor_msgs::msg::PointCloud2::UniquePtr &msg, PointCloudXYZI::Ptr& pcl_out)
 {
+  if (msg->header.stamp.sec < 0) {
+    RCLCPP_WARN(rclcpp::get_logger("preprocess"), "收到非法时间戳，忽略此帧点云");
+    return;
+  }
   switch (time_unit)
   {
     case SEC:
@@ -261,7 +280,9 @@ void Preprocess::oust64_handler(const sensor_msgs::msg::PointCloud2::UniquePtr &
   }
   else
   {
-    double time_stamp = rclcpp::Time(msg->header.stamp).seconds();
+    double time_stamp = 0.0;
+    if (msg->header.stamp.sec >= 0)
+      time_stamp = rclcpp::Time(msg->header.stamp).seconds();
     // cout << "===================================" << endl;
     // printf("Pt size = %d, N_SCANS = %d\r\n", plsize, N_SCANS);
     for (int i = 0; i < pl_orig.points.size(); i++)
@@ -478,6 +499,13 @@ void Preprocess::mid360_handler(const sensor_msgs::msg::PointCloud2::UniquePtr &
   pl_surf.clear();
   pl_corn.clear();
   pl_full.clear();
+
+  if (!has_field(*msg, "tag") || !has_field(*msg, "line"))
+  {
+    RCLCPP_WARN(rclcpp::get_logger("preprocess"), "PointCloud2缺少tag或line字段，使用默认处理方式");
+    default_handler(msg);
+    return;
+  }
 
   pcl::PointCloud<livox_ros::LivoxPointXyzitl> pl_orig;
   pcl::fromROSMsg(*msg, pl_orig);

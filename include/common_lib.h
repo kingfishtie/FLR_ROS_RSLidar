@@ -256,11 +256,17 @@ bool esti_plane(Matrix<T, 4, 1> &pca_result, const PointVector &point, const T &
 
 double get_time_sec(const builtin_interfaces::msg::Time &time)
 {
+    if (time.sec < 0) {
+        return 0.0;
+    }
     return rclcpp::Time(time).seconds();
 }
 
 rclcpp::Time get_ros_time(double timestamp)
 {
+    if (timestamp < 0.0) {
+        timestamp = 0.0;
+    }
     int32_t sec = std::floor(timestamp);
     auto nanosec_d = (timestamp - std::floor(timestamp)) * 1e9;
     uint32_t nanosec = nanosec_d;
