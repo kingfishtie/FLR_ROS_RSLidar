@@ -90,6 +90,8 @@ Clone the repository and colcon build:
 ```bash
     cd <ros2_ws>/src # cd into a ros2 workspace folder
     git clone https://github.com/Ericsii/FAST_LIO_ROS2.git --recursive
+    cd FAST_LIO_ROS2
+    git submodule update --init --recursive
     cd ..
     rosdep install --from-paths src --ignore-src -y
     colcon build --symlink-install
@@ -112,10 +114,15 @@ Connect to your PC to Livox LiDAR by following  [Livox-ros-driver2 installation]
 ```bash
 cd <ros2_ws>
 . install/setup.bash # use setup.zsh if use zsh
-ros2 launch fast_lio mapping.launch.py config_file:=avia.yaml
+ros2 launch fast_lio mapping.launch.py
 ```
 
-Change `config_file` parameter to other yaml file under config directory as you need.
+The default configuration `mid360.yaml` subscribes to `/rslidar_points` for LiDAR
+data and `/dog_imu_raw` for IMU messages. Change `config_file` to another YAML
+file if your topics differ.
+
+The `ros2_topic_info` directory contains the message definitions and sample
+outputs for these topics.
 
 Launch livox ros driver. Use MID360 as an example.
 
@@ -124,11 +131,11 @@ ros2 launch livox_ros_driver2 msg_MID360_launch.py
 ```
 
 - For livox serials, FAST-LIO only support the data collected by the ``` livox_lidar_msg.launch ``` since only its ``` livox_ros_driver2/CustomMsg ``` data structure produces the timestamp of each LiDAR point which is very important for the motion undistortion. ``` livox_lidar.launch ``` can not produce it right now.
-- If you want to change the frame rate, please modify the **publish_freq** parameter in the [livox_lidar_msg.launch](https://github.com/Livox-SDK/livox_ros_driver/blob/master/livox_ros_driver2/launch/livox_lidar_msg.launch) of [Livox-ros-driver](https://github.com/Livox-SDK/livox_ros_driver2) before make the livox_ros_driver pakage.
+- If you want to change the frame rate, please modify the **publish_freq** parameter in the [livox_lidar_msg.launch](https://github.com/Livox-SDK/livox_ros_driver/blob/master/livox_ros_driver2/launch/livox_lidar_msg.launch) of [Livox-ros-driver](https://github.com/Livox-SDK/livox_ros_driver2) before make the livox_ros_driver package.
 
 ### 3.2 For Livox serials with external IMU
 
-mapping_avia.launch theratically supports mid-70, mid-40 or other livox serial LiDAR, but need to setup some parameters befor run:
+mapping_avia.launch theoretically supports mid-70, mid-40 or other livox serial LiDAR, but need to setup some parameters before run:
 
 Edit ``` config/avia.yaml ``` to set the below parameters:
 
@@ -137,7 +144,7 @@ Edit ``` config/avia.yaml ``` to set the below parameters:
 3. Translational extrinsic: ``` extrinsic_T ```
 4. Rotational extrinsic: ``` extrinsic_R ``` (only support rotation matrix)
 - The extrinsic parameters in FAST-LIO is defined as the LiDAR's pose (position and rotation matrix) in IMU body frame (i.e. the IMU is the base frame). They can be found in the official manual.
-- FAST-LIO produces a very simple software time sync for livox LiDAR, set parameter ```time_sync_en``` to ture to turn on. But turn on **ONLY IF external time synchronization is really not possible**, since the software time sync cannot make sure accuracy.
+- FAST-LIO produces a very simple software time sync for livox LiDAR, set parameter ```time_sync_en``` to true to turn on. But turn on **ONLY IF external time synchronization is really not possible**, since the software time sync cannot make sure accuracy.
 
 ### 3.4 PCD file save
 
